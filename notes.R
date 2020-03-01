@@ -1,18 +1,26 @@
-library(Rcpp)
-library(rbenchmark)
+library(RcppEigen)
+library(microbenchmark)
 
-fibR <- function(n) {
-  if (n == 0) return(0)
-  if (n == 1) return(1)
-  return(fibR(n - 1) + fibR(n - 2))
-}
+Sys.setenv("PKG_CPPFLAGS" = "-march=native")
 
-sourceCpp(file = "fibonacci.cpp")
+# Use Rcpp attributes -----------------------------------------------------
 
-# Benchmarking
-tests = list(rep=expression(fibR(20)), 
-             arr=expression(fibC(20)))
-do.call(benchmark,
-        c(tests, list(replications=100,
-                      columns=c('test', 'elapsed', 'replications'),
-                      order='elapsed')))
+sourceCpp(file = "MatrixMult.cpp", verbose = TRUE, rebuild = TRUE)
+sourceCpp(file = "MatrixSolver.cpp", verbose = TRUE, rebuild = TRUE)
+
+A = matrix(rnorm(1000*1000), nrow = 1000)
+B = matrix(rnorm(1000*1000), nrow = 1000)
+x = matrix(rnorm(1000), nrow = 1000)
+b = MatrixMultC(A, x)
+
+microbenchmark(
+  RcppEigen = MatrixSolverC(A,b),
+  R = solve(A, b),
+  times = 100L
+)
+
+2/(63.85*10^-3)
+2/(466.36*10^-3)
+
+
+
